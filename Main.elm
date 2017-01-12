@@ -41,13 +41,18 @@ type Msg
     = ShuffleDeck (List Card)
 
 
+flip : Card -> Card
+flip card =
+    { card | visible = (not card.visible) }
+
+
 initialDeck : Deck
 initialDeck =
     [ Heart, Diamond, Spade, Clover ]
         |> List.map
             (\color ->
                 ((List.range 1 13)
-                    |> List.map (\value -> { value = value, color = color, visible = True })
+                    |> List.map (\value -> { value = value, color = color, visible = False })
                 )
             )
         |> List.concat
@@ -62,12 +67,20 @@ distributeFourCardsTo currentPlayer gameBoard =
         newPlayerDeck =
             List.take 4 gameBoard.deck
 
+        newPlayerDeckVisible =
+            case newPlayerDeck of
+                one :: two :: three :: [ four ] ->
+                    (one |> flip) :: two :: three :: [ four |> flip ]
+
+                _ ->
+                    []
+
         newPlayers =
             gameBoard.players
                 |> List.map
                     (\player ->
                         if player.name == currentPlayer.name then
-                            { player | deck = newPlayerDeck }
+                            { player | deck = newPlayerDeckVisible }
                         else
                             player
                     )
@@ -105,7 +118,9 @@ main : Program Never GameBoard Msg
 main =
     let
         gameBoard =
-            initialGameBoard |> addPlayer "Thibaut" |> addPlayer "Charlon"
+            initialGameBoard
+                |> addPlayer "Thibaut"
+                |> addPlayer "Charlon"
     in
         Html.program
             { init = ( gameBoard, Random.generate ShuffleDeck (Random.List.shuffle gameBoard.deck) )
